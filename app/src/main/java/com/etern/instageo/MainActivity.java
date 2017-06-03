@@ -1,6 +1,8 @@
 package com.etern.instageo;
 
 import android.Manifest;
+import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.support.annotation.NonNull;
@@ -12,15 +14,26 @@ import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks,
+        LocationListener,
         GoogleApiClient.OnConnectionFailedListener {
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private static final int PERMISSION_REQUEST_LOCATION = 10096;
+    private static final int REQUEST_CHECK_SETTINGS = 2001;
+    private boolean mIsRequestingLocationUpdates = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,19 +64,78 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-
+        if (!mIsRequestingLocationUpdates && mGoogleApiClient.isConnected()) {
+            startLocationUpdates();
+        }
     }
 
-    private void LoadImages() {
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mIsRequestingLocationUpdates) {
+            stopLocationUpdates();
+        }
+    }
+
+    private void stopLocationUpdates() {
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        mIsRequestingLocationUpdates = false;
+    }
+
+    private void loadImages() {
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        LoadImages(mLastLocation);
+        loadImages(mLastLocation);
     }
 
-    private void LoadImages(Location location) {
+    private LocationRequest createLocationRequest() {
+        LocationRequest req = new LocationRequest();
+        req.setInterval(10000);
+        req.setFastestInterval(5000);
+        req.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        return req;
+    }
+
+    private void loadImages(Location location) {
         if (location != null) {
             TextView text = (TextView)findViewById(R.id.locationLabel);
             text.setText(String.valueOf(location.getLatitude()) + ", " + String.valueOf((location.getLongitude())));
         }
+    }
+
+    private void startLocationUpdates() {
+        LocationRequest req = createLocationRequest();
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(req);
+        PendingResult<LocationSettingsResult> result = LocationServices
+                .SettingsApi
+                .checkLocationSettings(mGoogleApiClient, builder.build());
+        result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
+            @Override
+            public void onResult(@NonNull LocationSettingsResult locationSettingsResult) {
+                final Status status = locationSettingsResult.getStatus();
+                switch (status.getStatusCode()) {
+                    case LocationSettingsStatusCodes.SUCCESS:
+                        LocationServices.FusedLocationApi.requestLocationUpdates(
+                                mGoogleApiClient, MainActivity.this.createLocationRequest(), MainActivity.this);
+
+                        break;
+
+                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        try {
+                            status.startResolutionForResult(MainActivity.this, REQUEST_CHECK_SETTINGS);
+                        } catch (IntentSender.SendIntentException e) {
+
+                        }
+                        break;
+
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        break;
+                }
+            }
+        });
+
+        mIsRequestingLocationUpdates = true;
     }
 
     @Override
@@ -75,7 +147,12 @@ public class MainActivity extends AppCompatActivity implements
 
             return;
         }
-        LoadImages();
+
+        loadImages();
+
+        if (!mIsRequestingLocationUpdates) {
+            startLocationUpdates();
+        }
     }
 
     @Override
@@ -86,9 +163,28 @@ public class MainActivity extends AppCompatActivity implements
             case PERMISSION_REQUEST_LOCATION: {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    LoadImages();
+                    loadImages();
+
+                    if (!mIsRequestingLocationUpdates) {
+                        startLocationUpdates();
+                    }
                 }
             }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        LocationRequest req = createLocationRequest();
+        switch (requestCode) {
+            case REQUEST_CHECK_SETTINGS:
+                if (resultCode == RESULT_OK) {
+                    LocationServices.FusedLocationApi.requestLocationUpdates(
+                            mGoogleApiClient, req, this);
+                }
+                break;
         }
     }
 
@@ -100,5 +196,10 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        loadImages(location);
     }
 }
