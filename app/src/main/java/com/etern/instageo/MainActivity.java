@@ -4,12 +4,17 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
+import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -24,6 +29,11 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks,
         LocationListener,
@@ -34,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final int PERMISSION_REQUEST_LOCATION = 10096;
     private static final int REQUEST_CHECK_SETTINGS = 2001;
     private boolean mIsRequestingLocationUpdates = false;
+    private IPhotoSource photoSource = new PhotoSource500px("Q5Nm8FzowE4WHSqNDlXJhpP7suipUUV8N3cfLZ4e", this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +58,8 @@ public class MainActivity extends AppCompatActivity implements
                     .addApi(LocationServices.API)
                     .build();
         }
+
+        photoSource.init();
     }
 
     @Override
@@ -98,8 +111,23 @@ public class MainActivity extends AppCompatActivity implements
 
     private void loadImages(Location location) {
         if (location != null) {
+            String addr = geolocationToName(location);
+
             TextView text = (TextView)findViewById(R.id.locationLabel);
-            text.setText(String.valueOf(location.getLatitude()) + ", " + String.valueOf((location.getLongitude())));
+            text.setText(addr);
+
+            Geolocation geo = new Geolocation();
+            geo.latitude = location.getLatitude();
+            geo.longitude = location.getLongitude();
+            geo.range = 1;
+            geo.unit = Geolocation.RangeUnit.KILO_METER;
+
+            photoSource.searchByLocation(geo, new IPhotoSource.IPhotoSearchListener() {
+                @Override
+                public void onSucceed(List<Photo> photos) {
+                    Log.d(getResources().getString(R.string.app_name), String.format("Done! %s photos are returned.", photos.size()));
+                }
+            });
         }
     }
 
@@ -136,6 +164,31 @@ public class MainActivity extends AppCompatActivity implements
         });
 
         mIsRequestingLocationUpdates = true;
+    }
+
+    private String geolocationToName(Location location) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+
+        try {
+            List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+
+            if (addresses != null && addresses.size() > 0) {
+                Address addr = addresses.get(0);
+                ArrayList<String> addressFragments = new ArrayList<String>();
+
+                for (int i = 0; i <= addr.getMaxAddressLineIndex(); ++i) {
+                    addressFragments.add(addr.getAddressLine(i));
+                }
+
+                return TextUtils.join(System.getProperty("line.separator"), addressFragments);
+            }
+        } catch (IOException ioException) {
+
+        } catch (IllegalArgumentException illegalArgumnentException) {
+
+        }
+
+        return "";
     }
 
     @Override
