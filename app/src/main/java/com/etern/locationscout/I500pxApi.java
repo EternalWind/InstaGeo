@@ -1,8 +1,7 @@
-package com.etern.instageo;
+package com.etern.locationscout;
 
 import retrofit2.Call;
 import retrofit2.http.GET;
-import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 /**

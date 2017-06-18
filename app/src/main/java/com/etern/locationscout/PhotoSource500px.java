@@ -1,10 +1,9 @@
-package com.etern.instageo;
+package com.etern.locationscout;
 
 import android.app.Activity;
 import android.util.Log;
 
-import java.io.IOException;
-import java.util.List;
+import com.etern.locationscout.R;
 
 import retrofit2.Call;
 import retrofit2.Callback;

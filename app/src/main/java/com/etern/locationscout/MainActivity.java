@@ -1,13 +1,16 @@
-package com.etern.instageo;
+package com.etern.locationscout;
 
 import android.Manifest;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.provider.Telephony;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -15,8 +18,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.TextView;
+import android.view.Display;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.GridView;
+import android.widget.ImageView;
 
+import com.etern.locationscout.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -34,6 +43,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks,
         LocationListener,
@@ -45,6 +60,8 @@ public class MainActivity extends AppCompatActivity implements
     private static final int REQUEST_CHECK_SETTINGS = 2001;
     private boolean mIsRequestingLocationUpdates = false;
     private IPhotoSource photoSource = new PhotoSource500px("Q5Nm8FzowE4WHSqNDlXJhpP7suipUUV8N3cfLZ4e", this);
+    private ArrayAdapter<Bitmap> imgAdapter;
+    private int imgWidth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +83,29 @@ public class MainActivity extends AppCompatActivity implements
     protected void onStart() {
         mGoogleApiClient.connect();
         super.onStart();
+
+        GridView layout = getPhotoLayout();
+
+        imgAdapter = new ArrayAdapter<Bitmap>(this, R.layout.activity_main, R.id.dummyText) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                ImageView img_view = (ImageView)convertView;
+
+                if (img_view == null) {
+                    img_view = new ImageView(MainActivity.this);
+                    img_view.setLayoutParams(new GridView.LayoutParams(imgWidth, imgWidth));
+                    img_view.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    img_view.setPadding(0, 0, 0, 0);
+                }
+
+                Bitmap bitmap = getItem(position);
+                img_view.setImageBitmap(bitmap);
+
+                return img_view;
+            }
+        };
+
+        layout.setAdapter(imgAdapter);
     }
 
     @Override
@@ -109,23 +149,71 @@ public class MainActivity extends AppCompatActivity implements
         return req;
     }
 
+    private GridView getPhotoLayout() {
+        GridView grid = (GridView)findViewById(R.id.PhotoLayout);
+        return grid;
+    }
+
     private void loadImages(Location location) {
         if (location != null) {
-            String addr = geolocationToName(location);
-
-            TextView text = (TextView)findViewById(R.id.locationLabel);
-            text.setText(addr);
-
             Geolocation geo = new Geolocation();
             geo.latitude = location.getLatitude();
             geo.longitude = location.getLongitude();
             geo.range = 1;
             geo.unit = Geolocation.RangeUnit.KILO_METER;
 
+            imgAdapter.clear();
+
             photoSource.searchByLocation(geo, new IPhotoSource.IPhotoSearchListener() {
                 @Override
                 public void onSucceed(List<Photo> photos) {
                     Log.d(getResources().getString(R.string.app_name), String.format("Done! %s photos are returned.", photos.size()));
+
+                    GridView layout = getPhotoLayout();
+                    Display display = getWindowManager().getDefaultDisplay();
+                    Point size = new Point();
+                    display.getSize(size);
+
+                    int column_num = layout.getNumColumns();
+                    imgWidth = size.x / 3;
+
+                    for (int i = 0; i < photos.size(); ++i) {
+                        loadImage(photos.get(i), i);
+                    }
+                }
+            });
+        }
+    }
+
+    private void displayImage(final Bitmap image, final int index) {
+        Handler main_handler = new Handler(MainActivity.this.getMainLooper());
+
+        Runnable display_img_task = new Runnable() {
+            @Override
+            public void run() {
+                imgAdapter.add(image);
+            }
+        };
+
+        main_handler.post(display_img_task);
+    }
+
+    private void loadImage(Photo image, final int index) {
+        if (image != null) {
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder().url(image.url).build();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d(getResources().getString(R.string.app_name), e.getMessage());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    byte[] raw_data = response.body().bytes();
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(raw_data, 0, raw_data.length);
+
+                    displayImage(bitmap, index);
                 }
             });
         }
@@ -251,8 +339,12 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
+    public void searchPhotos(View view) {
+        loadImages(mLastLocation);
+    }
+
     @Override
     public void onLocationChanged(Location location) {
-        loadImages(location);
+        mLastLocation = location;
     }
 }

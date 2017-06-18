@@ -1,4 +1,4 @@
-package com.etern.instageo;
+package com.etern.locationscout;
 
 /**
  * Created by etern on 6/12/2017.

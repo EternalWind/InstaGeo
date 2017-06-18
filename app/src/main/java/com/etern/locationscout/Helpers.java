@@ -1,4 +1,4 @@
-package com.etern.instageo;
+package com.etern.locationscout;
 
 import java.util.ArrayList;
 import java.util.List;

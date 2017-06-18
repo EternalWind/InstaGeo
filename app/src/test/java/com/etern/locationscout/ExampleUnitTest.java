@@ -1,4 +1,4 @@
-package com.etern.instageo;
+package com.etern.locationscout;
 
 import org.junit.Test;
 

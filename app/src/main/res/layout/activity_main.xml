@@ -4,15 +4,40 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.etern.instageo.MainActivity">
+    tools:context="com.etern.locationscout.MainActivity">
 
-    <TextView
-        android:id="@+id/locationLabel"
+    <EditText
+        android:id="@+id/dummyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="165dp"
-        android:layout_marginTop="247dp"
-        android:text="Location"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Name"
+        android:visibility="invisible" />
+
+    <Button
+        android:id="@+id/searchButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_marginRight="16dp"
+        android:onClick="searchPhotos"
+        android:text="Search"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <GridView
+        android:id="@+id/PhotoLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:columnWidth="110dp"
+        android:gravity="center"
+        android:horizontalSpacing="0dp"
+        android:numColumns="3"
+        android:stretchMode="columnWidth"
+        android:verticalSpacing="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="37dp" />
+
 </android.support.constraint.ConstraintLayout>

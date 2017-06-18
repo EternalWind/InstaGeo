@@ -1,4 +1,4 @@
-package com.etern.instageo;
+package com.etern.locationscout;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.etern.instageo", appContext.getPackageName());
+        assertEquals("com.etern.locationscout", appContext.getPackageName());
     }
 }
