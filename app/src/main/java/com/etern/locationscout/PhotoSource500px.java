@@ -58,7 +58,7 @@ public class PhotoSource500px implements IPhotoSource {
 
             @Override
             public void onFailure(Call<PhotosSearchResponse500px> call, Throwable throwable) {
-                Log.d(context.getResources().getString(R.string.app_name), throwable.getMessage());
+                Helpers.log(context, throwable.getMessage());
             }
         });
     }

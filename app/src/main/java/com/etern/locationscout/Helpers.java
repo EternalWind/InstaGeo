@@ -1,5 +1,8 @@
 package com.etern.locationscout;
 
+import android.content.Context;
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,5 +25,13 @@ public final class Helpers {
         }
 
         return result;
+    }
+
+    public static String getAppName(Context context) {
+        return context.getResources().getString(R.string.app_name);
+    }
+
+    public static void log(Context context, String msg) {
+        Log.d(getAppName(context), msg);
     }
 }

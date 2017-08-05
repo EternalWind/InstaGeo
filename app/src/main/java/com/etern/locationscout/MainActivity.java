@@ -60,8 +60,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final int REQUEST_CHECK_SETTINGS = 2001;
     private boolean mIsRequestingLocationUpdates = false;
     private IPhotoSource photoSource = new PhotoSource500px("Q5Nm8FzowE4WHSqNDlXJhpP7suipUUV8N3cfLZ4e", this);
-    private ArrayAdapter<Bitmap> imgAdapter;
-    private int imgWidth;
+    private ImageListAdapter imgAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,24 +85,7 @@ public class MainActivity extends AppCompatActivity implements
 
         GridView layout = getPhotoLayout();
 
-        imgAdapter = new ArrayAdapter<Bitmap>(this, R.layout.activity_main, R.id.dummyText) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                ImageView img_view = (ImageView)convertView;
-
-                if (img_view == null) {
-                    img_view = new ImageView(MainActivity.this);
-                    img_view.setLayoutParams(new GridView.LayoutParams(imgWidth, imgWidth));
-                    img_view.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    img_view.setPadding(0, 0, 0, 0);
-                }
-
-                Bitmap bitmap = getItem(position);
-                img_view.setImageBitmap(bitmap);
-
-                return img_view;
-            }
-        };
+        imgAdapter = new ImageListAdapter(this, 0);
 
         layout.setAdapter(imgAdapter);
     }
@@ -112,6 +94,12 @@ public class MainActivity extends AppCompatActivity implements
     protected void onStop() {
         mGoogleApiClient.disconnect();
         super.onStop();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putParcelableArrayList("imgAdapter", imgAdapter.getItems());
     }
 
     @Override
@@ -167,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements
             photoSource.searchByLocation(geo, new IPhotoSource.IPhotoSearchListener() {
                 @Override
                 public void onSucceed(List<Photo> photos) {
-                    Log.d(getResources().getString(R.string.app_name), String.format("Done! %s photos are returned.", photos.size()));
+                    Helpers.log(MainActivity.this, String.format("Done! %s photos are returned.", photos.size()));
 
                     GridView layout = getPhotoLayout();
                     Display display = getWindowManager().getDefaultDisplay();
@@ -175,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements
                     display.getSize(size);
 
                     int column_num = layout.getNumColumns();
-                    imgWidth = size.x / 3;
+                    imgAdapter.setItemSize(size.x / 3);
 
                     for (int i = 0; i < photos.size(); ++i) {
                         loadImage(photos.get(i), i);
@@ -205,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-                    Log.d(getResources().getString(R.string.app_name), e.getMessage());
+                    Helpers.log(MainActivity.this, e.getMessage());
                 }
 
                 @Override
@@ -289,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        loadImages();
+        //loadImages();
 
         if (!mIsRequestingLocationUpdates) {
             startLocationUpdates();
