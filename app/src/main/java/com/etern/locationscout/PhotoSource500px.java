@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.etern.locationscout.R;
 
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -19,6 +20,9 @@ public class PhotoSource500px implements IPhotoSource {
     private String consumerKey;
     private I500pxApi api;
     private Activity context;
+
+    // TODO: Relocation the instance of OkHttpClient.
+    private OkHttpClient httpClient = new OkHttpClient();
 
     public PhotoSource500px(String consumer_key, Activity context) {
         consumerKey = consumer_key;
@@ -48,8 +52,7 @@ public class PhotoSource500px implements IPhotoSource {
                 callback.onSucceed(Helpers.<PhotoObject500px, Photo>map(data.photos, new Helpers.Transformer<PhotoObject500px, Photo>() {
                     @Override
                     public Photo transform(PhotoObject500px orig) {
-                        Photo photo = new Photo();
-                        photo.url = orig.image_url;
+                        Photo photo = new Photo(orig.image_url, httpClient);
 
                         return photo;
                     }
