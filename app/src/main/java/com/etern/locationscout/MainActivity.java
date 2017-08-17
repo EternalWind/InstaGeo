@@ -32,6 +32,7 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,10 +41,13 @@ public class MainActivity extends AppCompatActivity implements
         LocationListener,
         GoogleApiClient.OnConnectionFailedListener {
 
-    private GoogleApiClient mGoogleApiClient;
-    private Location mLastLocation;
     private static final int PERMISSION_REQUEST_LOCATION = 10096;
     private static final int REQUEST_CHECK_SETTINGS = 2001;
+    private final String IMG_ADAPTER_KEY = "imgAdapter";
+    private final String IMG_SIZE_KEY = "imgSize";
+
+    private GoogleApiClient mGoogleApiClient;
+    private Location mLastLocation;
     private boolean mIsRequestingLocationUpdates = false;
     private IPhotoSource photoSource = new PhotoSource500px("Q5Nm8FzowE4WHSqNDlXJhpP7suipUUV8N3cfLZ4e", this);
     private PhotoListAdapter imgAdapter;
@@ -62,18 +66,25 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         photoSource.init();
+
+        GridView layout = getPhotoLayout();
+
+        if (savedInstanceState != null) {
+            Photo[] photos = (Photo[])savedInstanceState.getParcelableArray(IMG_ADAPTER_KEY);
+            int imgSize = savedInstanceState.getInt(IMG_SIZE_KEY);
+
+            imgAdapter = new PhotoListAdapter(this, imgSize, new ArrayList<Photo>(Arrays.asList(photos)));
+        } else {
+            imgAdapter = new PhotoListAdapter(this, 0);
+        }
+
+        layout.setAdapter(imgAdapter);
     }
 
     @Override
     protected void onStart() {
         mGoogleApiClient.connect();
         super.onStart();
-
-        GridView layout = getPhotoLayout();
-
-        imgAdapter = new PhotoListAdapter(this, 0);
-
-        layout.setAdapter(imgAdapter);
     }
 
     @Override
@@ -85,7 +96,13 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
-        //state.putParcelableArrayList("imgAdapter", imgAdapter.getItems());
+        state.putInt(IMG_SIZE_KEY, imgAdapter.getItemSize());
+        state.putParcelableArray(IMG_ADAPTER_KEY, imgAdapter.getItems());
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
     }
 
     @Override

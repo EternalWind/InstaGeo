@@ -21,9 +21,6 @@ public class PhotoSource500px implements IPhotoSource {
     private I500pxApi api;
     private Activity context;
 
-    // TODO: Relocation the instance of OkHttpClient.
-    private OkHttpClient httpClient = new OkHttpClient();
-
     public PhotoSource500px(String consumer_key, Activity context) {
         consumerKey = consumer_key;
         this.context = context;
@@ -52,7 +49,7 @@ public class PhotoSource500px implements IPhotoSource {
                 callback.onSucceed(Helpers.<PhotoObject500px, Photo>map(data.photos, new Helpers.Transformer<PhotoObject500px, Photo>() {
                     @Override
                     public Photo transform(PhotoObject500px orig) {
-                        Photo photo = new Photo(orig.image_url, httpClient);
+                        Photo photo = new Photo(orig.image_url, App.Network().HttpClient());
 
                         return photo;
                     }

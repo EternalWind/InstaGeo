@@ -3,6 +3,7 @@ package com.etern.locationscout;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -33,8 +34,9 @@ public final class PhotoListAdapter extends BaseAdapter {
         this(context, itemSize, new ArrayList<Photo>());
     }
 
-    public ArrayList<Photo> getItems() {
-        return photos;
+    @NonNull
+    public Photo[] getItems() {
+        return photos.toArray(new Photo[0]);
     }
 
     public void clear() {
